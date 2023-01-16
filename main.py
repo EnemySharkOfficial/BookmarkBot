@@ -47,7 +47,7 @@ class Theme:
         self.category = category
         self.link = link
 
-BookMarkBot = telebot.TeleBot("BotUniqueIdentifier(Connection String)", parse_mode=None)
+BookMarkBot = telebot.TeleBot("5678487785:AAEqnC9xjsKmvghEUWgxVGnzYvnf7SBOvcY", parse_mode=None)
 
 @BookMarkBot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -59,7 +59,9 @@ def show_options(message):
                                       "/show НазваниеТемы - вывести список ссылок принадлежащих теме\n\n"
                                       "/add Тематика -u https://example.com - добавить ссылку. В случае если заданная тематика не существует, то создается новая темаитка с соответствующим названием.\n\n"
                                       "/delete Тематика НомерСсылки - Удаляет ссылку под выбранным номером из выбранной тематики\n\n"
-                                      "/deleteTheme ИмяТематики - удаление тематики. Удаление тематики происходит вместе с удалением всех ее ссылок")
+                                      "/deleteTheme ИмяТематики - удаление тематики. Удаление тематики происходит вместе с удалением всех ее ссылок"
+                                      "/showThemes - Показывает все темы в которых есть ссылки"
+                                      "/showAll - Показывает все темы и все ссылки, которые в них содержатся")
 
 @BookMarkBot.message_handler(commands=['add'])
 def add_theme(message):
@@ -162,9 +164,62 @@ def delete_theme(message):
     else:
         BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nВведены некорректные данные, \nвозможно вы имели ввиду /delete Тематика НомерСсылки или /deleteTheme Тематика ")
 
+@BookMarkBot.message_handler(commands=['showThemes'])
+def show_themes(message):
+    if (re.fullmatch('^\/showThemes', message.text)):
+        data = read_all()
+        if(data is not None and data != '{}'):
+            number = 1
+            themes = 'Список тем: \n'
+            for key, value in data.items():
+                themes += str(number) + ') ' + str(key) + '\n'
+                number += 1
+
+            if(themes != 'Список тем: \n'):
+                BookMarkBot.send_message(message.chat.id, themes)
+            else:
+                BookMarkBot.send_message(message.chat.id, 'Темы отсутствуют, для создания темы используйте /add')
+
+
+            print('themes showed:')
+            print(themes)
+            print()
+    else:
+        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /show Тематика ")
+
+@BookMarkBot.message_handler(commands=['showAll'])
+def show_all(message):
+    if (re.fullmatch('^\/showAll', message.text)):
+        data = read_all()
+        new_message = message
+
+        themes = 'Список тем: \n'
+        for key, value in data.items():
+            themes += str(1) + ') ' + str(key) + '\n'
+
+        if (themes != 'Список тем: \n'):
+            BookMarkBot.send_message(message.chat.id, 'Я перед условием')
+            if(data is not None and len(data) == 0):
+                BookMarkBot.send_message(message.chat.id, 'Я вошел в условие')
+                print('Showed Content:')
+                for key, value in data.items():
+                    BookMarkBot.send_message(message.chat.id, 'Я вошел в цикл')
+                    new_message.text = '/show ' + str(key)
+                    show_links(new_message)
+
+        else:
+            BookMarkBot.send_message(message.chat.id, 'Темы отсутствуют, для создания темы используйте /add')
+    else:
+        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /show Тематика ")
+
+
+
+
 @BookMarkBot.message_handler(func=lambda message: True)
 def unknown_command(message):
 	BookMarkBot.reply_to(message, "К сожалению такой команды я не знаю :(   "
                                   "Используй /help для ознакомления со списком команд")
+
+
 
 BookMarkBot.infinity_polling()

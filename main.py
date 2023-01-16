@@ -47,7 +47,7 @@ class Theme:
         self.category = category
         self.link = link
 
-BookMarkBot = telebot.TeleBot("5678487785:AAEqnC9xjsKmvghEUWgxVGnzYvnf7SBOvcY", parse_mode=None)
+BookMarkBot = telebot.TeleBot("", parse_mode=None)
 
 @BookMarkBot.message_handler(commands=['start'])
 def send_welcome(message):

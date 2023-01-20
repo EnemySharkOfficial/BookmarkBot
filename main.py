@@ -2,6 +2,11 @@ import telebot
 import re
 import json
 
+#пофиксить удаление
+
+#Добавить возможно опционально писать заметку для ссылки при добавлнеии
+#Добавить запуск вместе с экзешником телеграма и выключение вместе с выключением телеграмма
+
 print("active")
 print()
 
@@ -47,54 +52,43 @@ class Theme:
         self.category = category
         self.link = link
 
-BookMarkBot = telebot.TeleBot("", parse_mode=None)
+BookMarkBot = telebot.TeleBot("BotToken", parse_mode=None)
 
 @BookMarkBot.message_handler(commands=['start'])
 def send_welcome(message):
-	BookMarkBot.send_message(message.chat.id, "Приветствую, я бот для сохранения интересных вкладок по темамтикам, чтобы не забивать браузер. /help для ознакомления с функционалом.")
+	BookMarkBot.send_message(message.chat.id, "Приветствую, я бот для сохранения интересных вкладок по темамтикам, чтобы не засорять браузер. /help для ознакомления с функционалом.")
 
 @BookMarkBot.message_handler(commands=['help'])
-def show_options(message):
-	BookMarkBot.send_message(message.chat.id, f"Список команд:\n\n"
-                                      "/show НазваниеТемы - вывести список ссылок принадлежащих теме\n\n"
-                                      "/add Тематика -u https://example.com - добавить ссылку. В случае если заданная тематика не существует, то создается новая темаитка с соответствующим названием.\n\n"
-                                      "/delete Тематика НомерСсылки - Удаляет ссылку под выбранным номером из выбранной тематики\n\n"
-                                      "/deleteTheme ИмяТематики - удаление тематики. Удаление тематики происходит вместе с удалением всех ее ссылок"
-                                      "/showThemes - Показывает все темы в которых есть ссылки"
-                                      "/showAll - Показывает все темы и все ссылки, которые в них содержатся")
+def help(message):
+	BookMarkBot.send_message(message.chat.id, f"Вот список доступных команд:\n\n"
+                                      "/show НазваниеТемы - выводит список всех ссылок из указанной тематики\n\n"
+                                      "/add НазваниеТематики https://example.com - добавляет ссылку. Автоматически создает тематику, если она не существует\n\n"
+                                      "/delete НазваниеТематики НомерСсылки - Удаляет ссылку из выбранной тематики по указанному номеру. Для ознакомления с ссылками тематики используйте /show\n\n"
+                                      "/deleteTheme НазваниеТематики - Удаление тематики и всех ссылок, которые в ней содержатся\n\n"
+                                      "/showThemes - Показывает все существующие тематики\n\n"
+                                      "/showAll - Показывает все тематики и все ссылки, которые в них содержатся")
 
 @BookMarkBot.message_handler(commands=['add'])
 def add_theme(message):
-    if (re.fullmatch('^\/add (\w+)\s\-u\s(\w+):\/\/([\w\-\.]+)', message.text)
-    or
-       re.fullmatch('^\/add (\w+)\s\-u\s(\w+)://([\w\-\.]+)(/(\w+).(\w+))+', message.text)
-    ):
-        if(re.fullmatch('^\/add (\w+)\s\-u\s(\w+):\/\/([\w\-\.]+)', message.text)):
-            category = re.search("\s\w+", message.text)[0].replace(" ", "")
-            link = re.search(" -u \w+:\/\/\w+.\w+", message.text)[0].replace(' -u ', '')
+    if (re.fullmatch('\/add.+', message.text)):
+        split_data = message.text.split(' ')
+        if(len(split_data) == 3):
+            category = split_data[1]
+            link = split_data[2]
 
             theme = Theme(category, link)
             add_data(theme)
+
+            BookMarkBot.send_message(message.chat.id, "Ссылка добавлена")
 
             print('added:')
             data = read_all()
             print(data)
             print()
-
-        if(re.fullmatch('^\/add \w+ -u \w+:\/\/\w+.\w+(/\w+.\w+)+', message.text)):
-            category = re.search("\s\w+", message.text)[0].replace(" ", "")
-            link = re.search(' -u \w+:\/\/\w+.\w+(/\w+.\w+)+',
-                              message.text)[0].replace(' -u ', '')
-
-            theme = Theme(category, link)
-            add_data(theme)
-
-            print('added:')
-            data = read_all()
-            print(data)
-            print()
+        else:
+            BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /add Тематика https://example.com")
     else:
-        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /add Тематика -u https://example.com")
+        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /add Тематика https://example.com")
 
 @BookMarkBot.message_handler(commands=['show'])
 def show_links(message):
@@ -118,10 +112,12 @@ def show_links(message):
 
         else:
             BookMarkBot.send_message(message.chat.id,
-                                     'Темы с таким названием не существует')
+                                     'к сожалению, тематики с таким названием не существует, для ознакомления со списком тематик используйте /showThemes')
     else:
-        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /show Тематика ")
+        BookMarkBot.send_message(message.chat.id, "Не могу распознать команду, возможно вы имели ввиду:\n /show НазваниеТематики, если нет, то используйте /help для ознакомления со списком команд")
 
+#не работает падла
+#удаляет всегда 4 ссылку
 @BookMarkBot.message_handler(commands=['delete'])
 def delete_link(message):
     if (re.fullmatch('^\/delete \w+ \d+', message.text)):
@@ -137,16 +133,18 @@ def delete_link(message):
 
                 del data.get(category)[str(len(data.get(category)))]
                 write_all(data)
+
+                BookMarkBot.send_message(message.chat.id, "Ссылка удалена")
             else:
                 BookMarkBot.send_message(message.chat.id,
                                          'Ссылки с таким номером не существует.'
                                          'для получения списка ссылок используйте '
-                                         '/show Название темы')
+                                         '/show НазваниеТемы или /showAll')
         else:
             BookMarkBot.send_message(message.chat.id,
-                                     'Темы с таким названием не существует')
+                                     'К сожалению темы с таким названием не существует, для ознакомления со списком тематик используйте /showThemes')
     else:
-        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nвозможно вы имели ввиду /delete Тематика НомерСсылки или /deleteTheme Тематика ")
+        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nвозможно вы имели ввиду /delete, если нет, то используйте /help для ознакомления со списком всех команд")
 
 @BookMarkBot.message_handler(commands=['deleteTheme'])
 def delete_theme(message):
@@ -158,11 +156,13 @@ def delete_theme(message):
             print(links)
             data.pop(category)
             write_all(data)
+
+            BookMarkBot.send_message(message.chat.id, "Тема удалена")
         else:
             BookMarkBot.send_message(message.chat.id,
-                                     'Темы с таким названием не существует')
+                                     'К сожалению темы с таким названием не существует, для ознакомления со списком тематик используйте /showThemes')
     else:
-        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nВведены некорректные данные, \nвозможно вы имели ввиду /delete Тематика НомерСсылки или /deleteTheme Тематика ")
+        BookMarkBot.send_message(message.chat.id, "Не могу распознать команду, \nвозможно вы имели ввиду /deleteTheme НазваниеТематики, если нет, то используйте /help для ознакомления со списком всех команд")
 
 @BookMarkBot.message_handler(commands=['showThemes'])
 def show_themes(message):
@@ -178,48 +178,37 @@ def show_themes(message):
             if(themes != 'Список тем: \n'):
                 BookMarkBot.send_message(message.chat.id, themes)
             else:
-                BookMarkBot.send_message(message.chat.id, 'Темы отсутствуют, для создания темы используйте /add')
+                BookMarkBot.send_message(message.chat.id, 'К сожалению, темы отсутствуют, для создания темы используйте /add')
 
 
             print('themes showed:')
             print(themes)
             print()
     else:
-        BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /show Тематика ")
+        BookMarkBot.send_message(message.chat.id, "Не могу распознать команду, возможно вы имели ввиду: \nшаблон команды /show Тематика ")
 
 @BookMarkBot.message_handler(commands=['showAll'])
 def show_all(message):
     if (re.fullmatch('^\/showAll', message.text)):
         data = read_all()
         new_message = message
-
         themes = 'Список тем: \n'
         for key, value in data.items():
             themes += str(1) + ') ' + str(key) + '\n'
-
         if (themes != 'Список тем: \n'):
-            BookMarkBot.send_message(message.chat.id, 'Я перед условием')
-            if(data is not None and len(data) == 0):
-                BookMarkBot.send_message(message.chat.id, 'Я вошел в условие')
+            if(data is not None and len(data) != 0):
                 print('Showed Content:')
                 for key, value in data.items():
-                    BookMarkBot.send_message(message.chat.id, 'Я вошел в цикл')
                     new_message.text = '/show ' + str(key)
                     show_links(new_message)
-
         else:
-            BookMarkBot.send_message(message.chat.id, 'Темы отсутствуют, для создания темы используйте /add')
+            BookMarkBot.send_message(message.chat.id, 'К сожалению, темы отсутствуют, для создания темы используйте /add')
     else:
         BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /show Тематика ")
-
-
-
 
 @BookMarkBot.message_handler(func=lambda message: True)
 def unknown_command(message):
 	BookMarkBot.reply_to(message, "К сожалению такой команды я не знаю :(   "
                                   "Используй /help для ознакомления со списком команд")
-
-
 
 BookMarkBot.infinity_polling()

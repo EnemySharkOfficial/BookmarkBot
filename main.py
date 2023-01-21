@@ -2,10 +2,11 @@ import telebot
 import re
 import json
 
-#пофиксить удаление
+#скрестить delete и deleteTheme в одно засчет "перегрузки" чтобы упросить использование?
 
 #Добавить возможно опционально писать заметку для ссылки при добавлнеии
 #Добавить запуск вместе с экзешником телеграма и выключение вместе с выключением телеграмма
+#Добавить кнопки для бота для удобства работы
 
 print("active")
 print()
@@ -52,7 +53,7 @@ class Theme:
         self.category = category
         self.link = link
 
-BookMarkBot = telebot.TeleBot("BotToken", parse_mode=None)
+BookMarkBot = telebot.TeleBot("5678487785:AAEqnC9xjsKmvghEUWgxVGnzYvnf7SBOvcY", parse_mode=None)
 
 @BookMarkBot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -69,7 +70,7 @@ def help(message):
                                       "/showAll - Показывает все тематики и все ссылки, которые в них содержатся")
 
 @BookMarkBot.message_handler(commands=['add'])
-def add_theme(message):
+def add(message):
     if (re.fullmatch('\/add.+', message.text)):
         split_data = message.text.split(' ')
         if(len(split_data) == 3):
@@ -91,7 +92,7 @@ def add_theme(message):
         BookMarkBot.send_message(message.chat.id, "Введены некорректные данные, \nшаблон команды /add Тематика https://example.com")
 
 @BookMarkBot.message_handler(commands=['show'])
-def show_links(message):
+def show(message):
     if (re.fullmatch('^\/show \w+', message.text)):
         category = re.search(' \w+', message.text)[0].replace(' ', '')
         data = read_all()
@@ -116,30 +117,29 @@ def show_links(message):
     else:
         BookMarkBot.send_message(message.chat.id, "Не могу распознать команду, возможно вы имели ввиду:\n /show НазваниеТематики, если нет, то используйте /help для ознакомления со списком команд")
 
-#не работает падла
-#удаляет всегда 4 ссылку
 @BookMarkBot.message_handler(commands=['delete'])
-def delete_link(message):
+def delete(message):
     if (re.fullmatch('^\/delete \w+ \d+', message.text)):
-        category = re.search(' \w+ ', message.text)[0].replace(' ', '')
-        number = re.search('\d+', message.text)[0].replace(message.text, message.text)
         data = read_all()
+        split_data = message.text.split(' ')
+        category = split_data[1]
+        number = split_data[2]
 
         if (data.get(category) is not None):
-            if ((last_number(data, category) - 1) >= int(number)):
-                print(data.get(category))
+            links = data.get(category)
+
+            if (int(number) <= len(links) and int(number) > 0):
                 for i in range(int(number), len(data.get(category))):
-                    data.get(category)[str(i)] = data.get(category)[str(i + 1)]
-
-                del data.get(category)[str(len(data.get(category)))]
+                    links[str(i)] = links[str(i + 1)]
+                links.pop(str(len(links)))
                 write_all(data)
+                print('Deleted: ')
+                print(data)
 
-                BookMarkBot.send_message(message.chat.id, "Ссылка удалена")
+                BookMarkBot.send_message(message.chat.id,'Ссылка удалена')
             else:
                 BookMarkBot.send_message(message.chat.id,
-                                         'Ссылки с таким номером не существует.'
-                                         'для получения списка ссылок используйте '
-                                         '/show НазваниеТемы или /showAll')
+                                         'К сожалению cсылки с таким номером не существует, для ознакомления со списком ссылок используйте /show')
         else:
             BookMarkBot.send_message(message.chat.id,
                                      'К сожалению темы с таким названием не существует, для ознакомления со списком тематик используйте /showThemes')
@@ -153,9 +153,10 @@ def delete_theme(message):
         data = read_all()
         if (data.get(category) is not None):
             links = data.get(category)
-            print(links)
             data.pop(category)
             write_all(data)
+            print('deleted: ')
+            print(links)
 
             BookMarkBot.send_message(message.chat.id, "Тема удалена")
         else:
@@ -200,7 +201,7 @@ def show_all(message):
                 print('Showed Content:')
                 for key, value in data.items():
                     new_message.text = '/show ' + str(key)
-                    show_links(new_message)
+                    show(new_message)
         else:
             BookMarkBot.send_message(message.chat.id, 'К сожалению, темы отсутствуют, для создания темы используйте /add')
     else:
